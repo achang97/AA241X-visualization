@@ -4,10 +4,16 @@
   "private": true,
   "dependencies": {
     "deck.gl": "^5.1.4",
+    "material-ui": "^0.20.0",
+    "rc-slider": "^8.6.1",
     "react": "^16.3.1",
     "react-dom": "^16.3.1",
     "react-map-gl": "^3.2.5",
-    "react-scripts": "1.1.4"
+    "react-md": "^1.2.13",
+    "react-scripts": "1.1.4",
+    "semantic-ui-css": "^2.3.1",
+    "semantic-ui-react": "^0.79.1",
+    "typeface-roboto": "0.0.54"
   },
   "scripts": {
     "start": "react-scripts start",

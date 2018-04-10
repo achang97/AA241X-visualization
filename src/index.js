@@ -4,6 +4,15 @@ import ReactMapGL from 'react-map-gl';
 import {render} from 'react-dom';
 import React, {Component} from 'react';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import './index.css'
+
+import Slider from 'rc-slider';
+import 'rc-slider/assets/index.css';
+
+import { Icon, Menu, Button, Sidebar, Segment, Checkbox } from 'semantic-ui-react';
+import 'semantic-ui-css/semantic.min.css';
+
+
 
 // Set your mapbox access token here
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
@@ -12,7 +21,7 @@ const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 const DEFAULT_VIEWPORT = {
   longitude: -122.176128,
   latitude: 37.42240, 
-  zoom: 16.8,
+  zoom: 16.5,
   maxZoom: 18,
   pitch: 0,
   bearing: 0,
@@ -31,6 +40,18 @@ const COLOR_MAPPING = {
 	1: [0, 255, 0]
 }
 
+const ROTATE_INCREMENT = 0.1;
+
+function Toolbar(props) {
+  return (
+    <Menu attached='top' inverted>
+      <Button basic icon onClick={props.onClick} inverted>
+        <Icon name='content' />
+      </Button>
+    </Menu>
+  );
+}
+
 
 class App extends Component {
 
@@ -43,6 +64,8 @@ class App extends Component {
         width: 500,
         height: 500
       },
+      rotate: true,
+      sidebarOpen: false,
     	index: -1 // delete this once actual data is obtained
     };
 
@@ -128,12 +151,15 @@ class App extends Component {
   	// delete once actual data is obtained
   	var newIndex = (this.state.index + 1) % droneInfo[0].locations.length;
 
+    var newBearing = this.state.rotate ? (this.state.viewport.bearing + ROTATE_INCREMENT) % 360 : 
+      this.state.viewport.bearing;
+
   	this.setState({
     	droneInfo: droneInfo.map((currDrone) => {
     		// return currDrone;
     		return {...currDrone, location: currDrone.locations[newIndex]}
     	}),
-			viewport: {...this.state.viewport, bearing: (this.state.viewport.bearing + 0.1) % 360},
+			viewport: {...this.state.viewport, bearing: newBearing},
     	index: newIndex // delete this once actual data is obtained  		
   	})
 
@@ -141,6 +167,17 @@ class App extends Component {
     this._animationFrame = window.requestAnimationFrame(this._animate.bind(this));
   }
 
+  _toggleSidebar() {
+    this.setState({
+      sidebarOpen: !this.state.sidebarOpen
+    });
+  }
+
+  _toggleRotate() {
+    this.setState({
+      rotate: !this.state.rotate
+    });    
+  }
 
   render() {
   	var droneData = this.state.droneInfo.map((currDrone) => {
@@ -155,12 +192,33 @@ class App extends Component {
 	  });
 
 		return (
-      <ReactMapGL {...this.state.viewport} mapboxApiAccessToken={MAPBOX_ACCESS_TOKEN} onViewportChange={this._onViewportChange.bind(this)}>
-        <DeckGL {...this.state.viewport} layers={[
-        	this.vertiportLayer,
-          droneLayer,
-        ]} />
-      </ReactMapGL>
+      <div>
+        <Toolbar onClick={this._toggleSidebar.bind(this)}/>
+        <Sidebar.Pushable as={Segment} className="main-view">
+          <Sidebar as={Menu} animation='push' width='wide' visible={this.state.sidebarOpen} icon='labeled' vertical inverted>
+            <Menu.Item name='pitch-slider'>
+              <Slider max={60} step={1} onChange={(pitch) => this._onViewportChange({pitch: pitch})}/>
+              Pitch: {this.state.viewport.pitch}
+            </Menu.Item>
+            <Menu.Item name='bearing-slider'>
+              <Slider max={359} step={1} value={this.state.viewport.bearing} onChange={(bearing) => this._onViewportChange({bearing: bearing})}/>
+              Bearing: {Math.floor(this.state.viewport.bearing)}
+            </Menu.Item> 
+            <Menu.Item name='bearing-slider'>
+              <Checkbox toggle checked={this.state.rotate} onChange={this._toggleRotate.bind(this)}/>
+              <div> Rotate: {this.state.rotate ? "on" : "off"} </div>
+            </Menu.Item>                      
+          </Sidebar>
+          <Sidebar.Pusher>
+            <ReactMapGL {...this.state.viewport} mapboxApiAccessToken={MAPBOX_ACCESS_TOKEN} onViewportChange={this._onViewportChange.bind(this)}>
+              <DeckGL {...this.state.viewport} layers={[
+                this.vertiportLayer,
+                droneLayer,
+              ]} />
+            </ReactMapGL>
+          </Sidebar.Pusher>
+        </Sidebar.Pushable>
+      </div>
     );
   }
 }
@@ -172,5 +230,4 @@ class App extends Component {
 // 		b. non-rotating: choose bearing
 // 2. ability to alter pitch
 
-
-render(<App />, document.body.appendChild(document.createElement('div')));
+render(<App/>, document.getElementById('root'));
