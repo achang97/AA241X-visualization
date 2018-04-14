@@ -1,5 +1,5 @@
 /// app.js
-import DeckGL, {IconLayer} from 'deck.gl';
+import DeckGL, {IconLayer, PathLayer} from 'deck.gl';
 import ReactMapGL from 'react-map-gl';
 import {render} from 'react-dom';
 import React, {Component} from 'react';
@@ -11,8 +11,6 @@ import 'rc-slider/assets/index.css';
 
 import { Icon, Menu, Button, Sidebar, Segment, Checkbox } from 'semantic-ui-react';
 import 'semantic-ui-css/semantic.min.css';
-
-
 
 // Set your mapbox access token here
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
@@ -64,33 +62,44 @@ class App extends Component {
         width: 500,
         height: 500
       },
-      rotate: true,
+      rotate: false,
       sidebarOpen: false,
     	index: -1 // delete this once actual data is obtained
     };
 
-		// currently static, but may have to read it in later from DB
-		var vertiportLocations = [
-			[-122.176247, 37.424190], 
-			[-122.174096, 37.423218],
-			[-122.173931, 37.421704],
-			[-122.175055, 37.420553],
-			[-122.177937, 37.421167],
-			[-122.177966, 37.423093]
+		// currently static, but read it in later from DB
+		var vertiportData = [
+      // generate random numWaiting, some other metadata
+			{position: [-122.176247, 37.424190], numWaiting: Math.floor(Math.random() * 5)}, 
+			{position: [-122.174096, 37.423218], numWaiting: Math.floor(Math.random() * 5)},
+			{position: [-122.173931, 37.421704], numWaiting: Math.floor(Math.random() * 5)},
+			{position: [-122.175055, 37.420553], numWaiting: Math.floor(Math.random() * 5)},
+			{position: [-122.177937, 37.421167], numWaiting: Math.floor(Math.random() * 5)},
+			{position: [-122.177966, 37.423093], numWaiting: Math.floor(Math.random() * 5)}
 		];
 
-		this.vertiportLayer = this._createIconLayer('vertiport-layer', vertiportLocations.map((loc) => {
-			return {position: loc, icon: 'vertiport', size: 100, color: [255, 255, 255]}
-		}));
+    // create icon layer for vertiports
+    var vertiportLayerData = vertiportData.map((currVertiport) => {
+      return {icon: 'vertiport', size: 100, color: [255, 255, 255], ... currVertiport};
+    });
+
+    this.vertiportLayer = this._createIconLayer('vertiport-layer', vertiportLayerData, undefined, (info) => {
+      this._showInfo(info);
+    });    
   }
 
-  _createIconLayer(id, data) {
+
+  _createIconLayer(id, data, onHover=undefined, onClick=undefined) {
   	return new IconLayer({
 	    id: id,
 	    data: data,
-	    iconAtlas: 'images/image-atlas.png',
+	    iconAtlas: 'images/image-atlas-2.png',
 	    iconMapping: ICON_MAPPING,
-	    fp64: true
+	    fp64: true,
+      pickable: onHover || onClick,
+      autoHighlight: true,
+      onHover: onHover || ((info) => {}),
+      onClick: onClick || ((info) => {})
 	  });
   }
 
@@ -179,17 +188,26 @@ class App extends Component {
     });    
   }
 
-  render() {
-  	var droneData = this.state.droneInfo.map((currDrone) => {
-  		return {position: currDrone.location, icon: 'drone', size: 125, color: COLOR_MAPPING[currDrone.team]}
-  	});
+  _showInfo(info) {
+    // for now, just show the info of clicked object
+    this.setState({
+      sidebarOpen: true,
+    })
+  }
 
-		var droneLayer = new IconLayer({
-	    id: 'drone-layer',
-	    data: droneData,
-	    iconAtlas: 'images/image-atlas.png',
-	    iconMapping: ICON_MAPPING
-	  });
+  render() {
+    // create icon layer for drones
+  	var droneData = this.state.droneInfo.map((currDrone) => {
+  		return {position: currDrone.location, icon: 'drone', size: 100, color: COLOR_MAPPING[currDrone.team]}
+  	});
+    var droneLayer = this._createIconLayer('drone-layer', droneData);
+
+    /* can use path layer to represent requested paths */
+    // const pathLayer = new PathLayer({
+    //   id: 'path-layer',
+    //   data: [{path: [[-122.177966, 37.423093], [-122.17794986, 37.423087444000004], [-122.17793372, 37.423081888], [-122.17791758, 37.423076332], [-122.17790144, 37.423070776], [-122.1778853, 37.42306522], [-122.17786916, 37.423059664], [-122.17785302, 37.423054108], [-122.17783688, 37.423048552000004], [-122.17782074, 37.423042996], [-122.1778046, 37.42303744], [-122.17778846, 37.423031884000004], [-122.17777232, 37.423026328], [-122.17775618, 37.423020772], [-122.17774004, 37.423015216], [-122.1777239, 37.423009660000005], [-122.17770776, 37.423004104], [-122.17769162, 37.422998548], [-122.17767547999999, 37.422992992], [-122.17765933999999, 37.422987436], [-122.17764319999999, 37.422981879999995], [-122.17762705999999, 37.422976324], [-122.17761091999999, 37.422970768], [-122.17759477999999, 37.422965212], [-122.17757864, 37.422959655999996], [-122.1775625, 37.4229541], [-122.17754636, 37.422948544], [-122.17753022, 37.422942987999996], [-122.17751408, 37.422937432], [-122.17749794, 37.422931876], [-122.1774818, 37.42292632], [-122.17746566, 37.422920764], [-122.17744952, 37.422915208], [-122.17743338, 37.422909652], [-122.17741724, 37.422904095999996], [-122.1774011, 37.42289854], [-122.17738496, 37.422892984], [-122.17736882, 37.422887428], [-122.17735268, 37.422881872], [-122.17733654, 37.422876316], [-122.1773204, 37.42287076], [-122.17730426, 37.422865204], [-122.17728812, 37.422859648], [-122.17727198, 37.422854092], [-122.17725584, 37.422848536000004], [-122.1772397, 37.42284298], [-122.17722356, 37.422837424], [-122.17720742, 37.422831868], [-122.17719128, 37.422826312], [-122.17717514, 37.422820756], [-122.177159, 37.4228152], [-122.17714286, 37.422809644000004], [-122.17712672, 37.422804088], [-122.17711058, 37.422798532], [-122.17709443999999, 37.422792976], [-122.17707829999999, 37.42278742], [-122.17706215999999, 37.422781864], [-122.17704601999999, 37.422776307999996], [-122.17702987999999, 37.422770752], [-122.17701373999999, 37.422765196], [-122.17699759999999, 37.422759639999995], [-122.17698146, 37.422754084], [-122.17696532, 37.422748528]], color: [255, 0, 0]}],
+    //   fp64: true
+    // });
 
 		return (
       <div>
@@ -213,7 +231,7 @@ class App extends Component {
             <ReactMapGL {...this.state.viewport} mapboxApiAccessToken={MAPBOX_ACCESS_TOKEN} onViewportChange={this._onViewportChange.bind(this)}>
               <DeckGL {...this.state.viewport} layers={[
                 this.vertiportLayer,
-                droneLayer,
+                droneLayer
               ]} />
             </ReactMapGL>
           </Sidebar.Pusher>
@@ -222,12 +240,5 @@ class App extends Component {
     );
   }
 }
-
-// TO DO
-// control panel with following functionality
-// 1. choose between rotating / non-rotating
-// 		a. rotating: choose rate
-// 		b. non-rotating: choose bearing
-// 2. ability to alter pitch
 
 render(<App/>, document.getElementById('root'));
