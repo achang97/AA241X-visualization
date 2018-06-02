@@ -16,3 +16,16 @@ body {
 	margin: 0 !important;
 }
 
+.menu {
+	border-radius: 0 !important;
+}
+
+.pane {
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+}
+
+.metrics-section {
+	padding: 20px;
+}
